@@ -1,0 +1,6 @@
+@VeterinaryMarketplace.API_HostAddress = http://localhost:5002
+
+GET {{VeterinaryMarketplace.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
