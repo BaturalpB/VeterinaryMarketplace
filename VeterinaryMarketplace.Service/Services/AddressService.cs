@@ -1,11 +1,5 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VeterinaryMarketplace.Core.Entities;
-using VeterinaryMarketplace.Data.UnitOfWorks;
 using VeterinaryMarketplace.Core.DTOs.Address;
 using VeterinaryMarketplace.Core.Repositories;
 using VeterinaryMarketplace.Core.Services;

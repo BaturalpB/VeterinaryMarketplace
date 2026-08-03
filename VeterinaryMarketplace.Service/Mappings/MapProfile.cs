@@ -2,6 +2,7 @@
 using VeterinaryMarketplace.Core.DTOs;
 using VeterinaryMarketplace.Core.DTOs.Appointment;
 using VeterinaryMarketplace.Core.DTOs.Auth;
+using VeterinaryMarketplace.Core.DTOs.Treatment;
 using VeterinaryMarketplace.Core.Entities;
 
 namespace VeterinaryMarketplace.Service.Mappings
@@ -32,7 +33,11 @@ namespace VeterinaryMarketplace.Service.Mappings
 
             CreateMap<VeterinarianDetail, VeterinarianDto>();
             CreateMap<VeterinarianCreateDto, VeterinarianDetail>();
-            
+
+            CreateMap<Treatment, TreatmentDto>().ReverseMap();
+            CreateMap<TreatmentCreateDto, Treatment>();
+            CreateMap<TreatmentUpdateDto, Treatment>();
+
         }
 
     }
