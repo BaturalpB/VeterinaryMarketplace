@@ -3,6 +3,7 @@ using VeterinaryMarketplace.Core.DTOs;
 using VeterinaryMarketplace.Core.DTOs.Appointment;
 using VeterinaryMarketplace.Core.DTOs.Auth;
 using VeterinaryMarketplace.Core.DTOs.Treatment;
+using VeterinaryMarketplace.Core.DTOs.WorkingHour;
 using VeterinaryMarketplace.Core.Entities;
 
 namespace VeterinaryMarketplace.Service.Mappings
@@ -38,6 +39,9 @@ namespace VeterinaryMarketplace.Service.Mappings
             CreateMap<TreatmentCreateDto, Treatment>();
             CreateMap<TreatmentUpdateDto, Treatment>();
 
+            CreateMap<WorkingHour, WorkingHourDto>().ReverseMap();
+            CreateMap<WorkingHourCreateDto, WorkingHour>();
+            CreateMap<WorkingHourUpdateDto, WorkingHour>();
         }
 
     }

@@ -27,7 +27,7 @@ namespace VeterinaryMarketplace.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAddresses()
+        public async Task<IActionResult> GetTreatments()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var treatments = await _treatmentService.GetMyTreatmentsAsync(userId);
