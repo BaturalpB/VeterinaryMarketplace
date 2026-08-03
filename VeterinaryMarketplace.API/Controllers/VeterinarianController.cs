@@ -1,8 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,13 +18,13 @@ namespace VeterinaryMarketplace.API.Controllers
     [ApiController]
     public class VeterinariansController : ControllerBase
     {
-        private readonly IService<VeterinarianDetail> _veterinarianService;
+        private readonly IVeterinarianDetailService _veterinarianService;
         private readonly IService<Clinic> _clinicService;
         private readonly IMapper _mapper;
         private readonly IValidator<VeterinarianCreateDto> _createValidator;
 
         public VeterinariansController(
-            IService<VeterinarianDetail> veterinarianService,
+            IVeterinarianDetailService veterinarianService,
             IService<Clinic> clinicService,
             IMapper mapper,
             IValidator<VeterinarianCreateDto> createValidator)
@@ -47,13 +47,13 @@ namespace VeterinaryMarketplace.API.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var existingProfile = await _veterinarianService.Where(x => x.UserId == userId).FirstOrDefaultAsync();
+            var existingProfile = await _veterinarianService.GetByUserIdAsync(userId);
             if (existingProfile != null)
             {
                 return BadRequest(new { Message = "Sizin zaten sisteme kayıtlı bir veteriner profiliniz bulunuyor!" });
             }
 
-            var clinic = await _clinicService.Where(c => c.Id == createDto.ClinicId).FirstOrDefaultAsync();
+            var clinic = await _clinicService.GetByIdAsync(createDto.ClinicId);
             if (clinic == null)
             {
                 return NotFound(new { Message = "Seçilen klinik sistemde bulunamadı." });
@@ -73,7 +73,7 @@ namespace VeterinaryMarketplace.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetAll()
         {
-            var veterinarians = await _veterinarianService.Where(x => true).Include(v => v.Clinic).ToListAsync();
+            var veterinarians = await _veterinarianService.GetAllWithClinicAsync();
 
             var vetDtos = _mapper.Map<List<VeterinarianDto>>(veterinarians);
             return Ok(vetDtos);
@@ -84,14 +84,14 @@ namespace VeterinaryMarketplace.API.Controllers
         public async Task<IActionResult> ApproveVeterinarian(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var veterinarian = await _veterinarianService.Where(v => v.Id == id).FirstOrDefaultAsync();
+            var veterinarian = await _veterinarianService.GetByIdAsync(id);
 
             if (veterinarian == null)
             {
                 return NotFound(new { Message = "Onaylanacak Veteriner yok" });
             }
 
-            var clinic = await _clinicService.Where(c => c.Id == veterinarian.ClinicId).FirstOrDefaultAsync();
+            var clinic = await _clinicService.GetByIdAsync(veterinarian.ClinicId);
 
             if (veterinarian.ISAproved)
             {
@@ -110,12 +110,7 @@ namespace VeterinaryMarketplace.API.Controllers
         [HttpGet("approved")]
         public async Task<IActionResult> GetApprovedVeterinarians([FromQuery] Guid? clinicId)
         {
-            var query = _veterinarianService.Where(v => v.ISAproved == true);
-            if (clinicId.HasValue)
-            {
-                query = query.Where(v => v.ClinicId == clinicId.Value);
-            }
-            var veterinarians = await query.Include(v => v.Clinic).ToListAsync();
+            var veterinarians = await _veterinarianService.GetApprovedWithClinicAsync(clinicId);
 
             if (!veterinarians.Any())
             {

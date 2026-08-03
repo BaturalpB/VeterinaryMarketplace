@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace VeterinaryMarketplace.Core.Entities
@@ -26,7 +26,7 @@ namespace VeterinaryMarketplace.Core.Entities
         public string? VeterinarianNote { get; set; }
 
         public virtual Pet Pet { get; set; }
-        public virtual VeterinarianDetail Veterenarian { get; set; }
+        public virtual VeterinarianDetail Veterinarian { get; set; }
 
         public virtual ICollection<AppointmentItem> AppointmentItems { get; set; }
 

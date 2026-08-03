@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using VeterinaryMarketplace.Core.Entities;
 
@@ -18,7 +18,7 @@ namespace VeterinaryMarketplace.Data.Configurations
             builder.Property(x => x.CommissionRate).HasColumnType("decimal(18,2)");
 
             builder.HasOne(x => x.User)
-            .WithOne(u => u.VeterenarianDetail) 
+            .WithOne(u => u.VeterinarianDetail)
             .HasForeignKey<VeterinarianDetail>(x => x.UserId) 
             .OnDelete(DeleteBehavior.Restrict);
         }

@@ -1,8 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -18,11 +18,11 @@ namespace VeterinaryMarketplace.API.Controllers
     [Authorize]
     public class PetsController : ControllerBase
     {
-        private readonly IService<Pet> _petService;
+        private readonly IPetService _petService;
         private readonly IMapper _mapper;
         private readonly IValidator<PetCreateDto> _createValidator;
         private readonly IValidator<PetUpdateDto> _updateValidator;
-        public PetsController(IService<Pet> petService, IMapper mapper, IValidator<PetCreateDto> createValidator, IValidator<PetUpdateDto> updateValidator)
+        public PetsController(IPetService petService, IMapper mapper, IValidator<PetCreateDto> createValidator, IValidator<PetUpdateDto> updateValidator)
         {
             _petService = petService;
             _mapper = mapper;
@@ -35,7 +35,7 @@ namespace VeterinaryMarketplace.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var pets = await _petService.Where(x => x.OwnerId == userId).ToListAsync();
+            var pets = await _petService.GetPetsByUserIdAsync(userId);
 
             var petDtos = _mapper.Map<List<PetDto>>(pets);
 
@@ -73,7 +73,7 @@ namespace VeterinaryMarketplace.API.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var pet = await _petService.Where(x => x.Id == id).FirstOrDefaultAsync();
+            var pet = await _petService.GetByIdAsync(id);
             if (pet == null)
             {
                 return NotFound(new { Message = "Evcil hayvan bulunamadı." });
@@ -96,7 +96,7 @@ namespace VeterinaryMarketplace.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var pet = await _petService.Where(x => x.Id == id).FirstOrDefaultAsync();
+            var pet = await _petService.GetByIdAsync(id);
             if (pet == null)
             {
                 return NotFound(new { Message = "Evcil hayvan bulunamadı." });

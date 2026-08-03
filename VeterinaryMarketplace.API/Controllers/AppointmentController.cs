@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -110,7 +110,7 @@ namespace VeterinaryMarketplace.API.Controllers
 
             var appointments = await _appointmentService.Where(a => a.Pet.OwnerId == userId)
                 .Include(a => a.Pet)
-                .Include(a => a.Veterenarian)
+                .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
@@ -131,9 +131,9 @@ namespace VeterinaryMarketplace.API.Controllers
         public async Task<IActionResult> GetVetAppointments()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var appointments = await _appointmentService.Where(a => a.Veterenarian.UserId == userId)
+            var appointments = await _appointmentService.Where(a => a.Veterinarian.UserId == userId)
                 .Include(a => a.Pet)
-                .Include(a => a.Veterenarian)
+                .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
@@ -155,7 +155,7 @@ namespace VeterinaryMarketplace.API.Controllers
         public async Task<IActionResult> UpdateAppointmentStatus(Guid id, [FromBody] Appointment.AppointmentStatus newStatus)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var Appointment = await _appointmentService.Where(a => a.Veterenarian.UserId == userId && a.Id == id).FirstOrDefaultAsync();
+            var Appointment = await _appointmentService.Where(a => a.Veterinarian.UserId == userId && a.Id == id).FirstOrDefaultAsync();
             if (Appointment == null)
             {
                 return NotFound(new { Message = "Randevu Bulunamadı" });

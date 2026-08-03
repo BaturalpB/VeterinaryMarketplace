@@ -1,7 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using VeterinaryMarketplace.Core.DTOs;
 using VeterinaryMarketplace.Core.DTOs.Appointment;
 using VeterinaryMarketplace.Core.DTOs.Auth;
+using VeterinaryMarketplace.Core.DTOs.Address;
+using VeterinaryMarketplace.Core.DTOs.Review;
 using VeterinaryMarketplace.Core.DTOs.Treatment;
 using VeterinaryMarketplace.Core.DTOs.WorkingHour;
 using VeterinaryMarketplace.Core.Entities;
@@ -15,8 +17,8 @@ namespace VeterinaryMarketplace.Service.Mappings
             CreateMap<AppointmentCreateDto, Appointment>();
             CreateMap<Appointment, AppointmentDto>()
             .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Pet.Name))
-            .ForMember(dest => dest.VeterinarianInfo, opt => opt.MapFrom(src => src.Veterenarian.Uzmanlik))
-            .ForMember(dest => dest.ClinicName, opt => opt.MapFrom(src => src.Veterenarian.Clinic.Name))
+            .ForMember(dest => dest.VeterinarianInfo, opt => opt.MapFrom(src => src.Veterinarian.Uzmanlik))
+            .ForMember(dest => dest.ClinicName, opt => opt.MapFrom(src => src.Veterinarian.Clinic.Name))
             .ReverseMap();
 
             CreateMap<AppointmentItem, AppointmentItemDto>()
@@ -42,6 +44,13 @@ namespace VeterinaryMarketplace.Service.Mappings
             CreateMap<WorkingHour, WorkingHourDto>().ReverseMap();
             CreateMap<WorkingHourCreateDto, WorkingHour>();
             CreateMap<WorkingHourUpdateDto, WorkingHour>();
+
+            CreateMap<Address, AddressDto>().ReverseMap();
+            CreateMap<AddressCreateDto, Address>();
+            CreateMap<AddressUpdateDto, Address>();
+
+            CreateMap<ReviewCreateDto, Review>();
+            CreateMap<ReviewUpdateDto, Review>();
         }
 
     }

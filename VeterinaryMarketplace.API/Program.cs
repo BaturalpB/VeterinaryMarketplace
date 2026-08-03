@@ -1,4 +1,4 @@
-using FluentValidation;
+ï»¿using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +32,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Aþaðýdaki kutucuða sadece ürettiðin o uzun token metnini yapýþtýr."
+        Description = "AÅŸaÄŸÄ±daki kutucuÄŸa sadece Ã¼rettiÄŸin o uzun token metnini yapÄ±ÅŸtÄ±r."
     });
 
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -66,6 +66,9 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ITreatmentService, TreatmentService>();
 builder.Services.AddScoped<IWorkingHourService, WorkingHourService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IPetService, PetService>();
+builder.Services.AddScoped<IVeterinarianDetailService, VeterinarianDetailService>();
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MapProfile>();

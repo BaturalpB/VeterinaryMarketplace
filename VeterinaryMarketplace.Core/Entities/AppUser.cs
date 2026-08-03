@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,10 +16,10 @@ namespace VeterinaryMarketplace.Core.Entities
         public string? City { get; set; }
         public virtual ICollection<Pet> Pets { get; set; }
         public DateTime? RegisteredAt { get; set; }
-        public virtual VeterinarianDetail VeterenarianDetail { get; set; }
+        public virtual VeterinarianDetail VeterinarianDetail { get; set; }
         public virtual ICollection<Treatment> Treatments { get; set; }  
         public virtual ICollection<Review> Reviews { get; set; }
-        public ICollection<WorkingHour> WorkingHours { get; set; }
+        public virtual ICollection<WorkingHour> WorkingHours { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; }
     }
 }

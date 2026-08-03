@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using VeterinaryMarketplace.Core.DTOs.Auth;
 using VeterinaryMarketplace.Core.Entities;
 using VeterinaryMarketplace.Core.Services;
-using VeterinaryMarketplace.Data.Contexts;
+using VeterinaryMarketplace.Core.Repositories;
 
 namespace VeterinaryMarketplace.Service.Services
 {
@@ -22,13 +22,15 @@ namespace VeterinaryMarketplace.Service.Services
     {
         private readonly IConfiguration _configuration;
         private readonly UserManager<AppUser> _userManager;
-        private readonly AppDbContext _appDbContext;
+        private readonly IGenericRepository<RefreshToken> _refreshTokenRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public TokenService(IConfiguration configuration, UserManager<AppUser> userManager, AppDbContext appDbContext)
+        public TokenService(IConfiguration configuration, UserManager<AppUser> userManager, IGenericRepository<RefreshToken> refreshTokenRepository, IUnitOfWork unitOfWork)
         {
             _configuration = configuration;
             _userManager = userManager;
-            _appDbContext = appDbContext;
+            _refreshTokenRepository = refreshTokenRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<TokenResponseDto> CreateTokenAsync(AppUser user)
@@ -69,8 +71,8 @@ namespace VeterinaryMarketplace.Service.Services
             token1.Token = refreshToken;
             token1.Id = Guid.NewGuid();
 
-            await _appDbContext.AddAsync(token1);
-            await _appDbContext.SaveChangesAsync();
+            await _refreshTokenRepository.AddAsync(token1);
+            await _unitOfWork.CommitAsync();
 
             return new TokenResponseDto
             {
@@ -82,15 +84,15 @@ namespace VeterinaryMarketplace.Service.Services
         }
         public async Task<(TokenResponseDto? Token, string? ErrorMessage)> RefreshTokenAsync(string refreshToken)
         {
-            var token2 = await _appDbContext.RefreshTokens.FirstOrDefaultAsync(x => x.Token == refreshToken);
+            var token2 = await _refreshTokenRepository.Where(x => x.Token == refreshToken).FirstOrDefaultAsync();
 
             if (token2 == null || token2.IsRevoked == true || token2.ExpiresTime <= DateTime.UtcNow)
             {
                 return (null, "Token geçersiz, iptal edilmiş veya geçerlilik süresi dolmuş.");
             }
 
-            token2.IsRevoked = true;
-            await _appDbContext.SaveChangesAsync();
+            _refreshTokenRepository.Update(token2);
+            await _unitOfWork.CommitAsync();
 
             var user = await _userManager.FindByIdAsync(token2.UserId);
             var newToken = await CreateTokenAsync(user);

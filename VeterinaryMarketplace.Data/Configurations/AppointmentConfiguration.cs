@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using VeterinaryMarketplace.Core.Entities;
 
@@ -14,7 +14,7 @@ namespace VeterinaryMarketplace.Data.Configurations
                    .HasForeignKey(a => a.PetId)
                    .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne(a => a.Veterenarian)
+            builder.HasOne(a => a.Veterinarian)
                    .WithMany(v => v.Appointments)
                    .HasForeignKey(a => a.VeterinarianDetailId)
                    .OnDelete(DeleteBehavior.Restrict);
