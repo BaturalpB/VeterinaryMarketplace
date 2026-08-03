@@ -9,7 +9,7 @@ namespace VeterinaryMarketplace.Core.DTOs.Payment
         public string ExpireMonth { get; set; } = null!;
         public string ExpireYear { get; set; } = null!;
         public string Cvc { get; set; } = null!;
-        public decimal Price { get; set; }
+        
         public Guid AppointmentId { get; set; }
     }
 }

@@ -10,6 +10,6 @@ namespace VeterinaryMarketplace.Core.Services
     public interface IAppointmentService:IService<Appointment>
     {
         Task<bool> ApproveAppointmentAsync(Guid id);
-        Task<bool> CancelAppointmentAsync(Guid id);
+        Task<(bool IsSuccess, string? ErrorMessage)> CancelAppointmentAsync(Guid id);
     }
 }

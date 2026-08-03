@@ -40,5 +40,18 @@ namespace VeterinaryMarketplace.API.Controllers
             
             return BadRequest(new { Message = "Ödeme başarısız.", Error = result.ErrorMessage });
         }
+
+        [HttpPost("cancel/{appointmentId}")]
+        public async Task<IActionResult> CancelPayment(Guid appointmentId)
+        {
+            var result = await _paymentService.CancelPaymentAsync(appointmentId);
+
+            if (result.IsSuccess)
+            {
+                return Ok(new { Message = "Ödeme başarıyla iptal edildi ve ücret müşterinin kartına iade edildi." });
+            }
+
+            return BadRequest(new { Message = "İptal işlemi başarısız.", Error = result.ErrorMessage });
+        }
     }
 }

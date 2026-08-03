@@ -33,7 +33,7 @@ namespace VeterinaryMarketplace.API.Controllers
             IService<VeterinarianDetail> veterinarianDetailService,
             IService<Clinic> clinicService,
             IMapper mapper,
-            IValidator<AppointmentCreateDto> createValidator) 
+            IValidator<AppointmentCreateDto> createValidator)
         {
             _appointmentService = appointmentService;
             _petService = petService;
@@ -47,7 +47,6 @@ namespace VeterinaryMarketplace.API.Controllers
         [Authorize]
         public async Task<IActionResult> CreateAppointment([FromBody] AppointmentCreateDto createDto)
         {
-            
             var validationResult = await _createValidator.ValidateAsync(createDto);
             if (!validationResult.IsValid)
             {
@@ -146,7 +145,6 @@ namespace VeterinaryMarketplace.API.Controllers
 
             var vetAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
 
-           
             return Ok(vetAppointmentsDto);
         }
 
@@ -170,23 +168,30 @@ namespace VeterinaryMarketplace.API.Controllers
         public async Task<IActionResult> CancelAppointment(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // 1. Güvenlik: Kullanıcının kendi randevusu mu kontrolü
             var appointment = await _appointmentService.Where(a => a.Pet.OwnerId == userId && a.Id == id).FirstOrDefaultAsync();
 
             if (appointment == null)
             {
                 return NotFound(new { Message = "Randevu bulunamadı veya bu işlem için yetkiniz yok." });
             }
-            var timeDifference = appointment.AppointmentTime - DateTime.Now;
 
+            // 2. İş Kuralı: 24 saat kontrolü
+            var timeDifference = appointment.AppointmentTime - DateTime.Now;
             if (timeDifference.TotalHours < 24)
             {
                 return BadRequest(new { Message = "Randevuya 24 saatten az kaldığı için iptal işlemi yapılamaz." });
             }
-            appointment.Status = Appointment.AppointmentStatus.Cancelled;
 
-            await _appointmentService.UpdateAsync(appointment);
+            // 3. İptal ve İade Motorunu (PaymentService ile entegre) tetikle!
+            var result = await _appointmentService.CancelAppointmentAsync(id);
 
-            return Ok(new { Message = "Randevunuz başarıyla iptal edildi." });
+            if (result.IsSuccess)
+            {
+                return Ok(new { Message = "Randevunuz başarıyla iptal edildi. Varsa ücret iadesi yapılmıştır." });
+            }
+
+            return BadRequest(new { Message = "İptal başarısız.", Error = result.ErrorMessage });
         }
 
         [HttpPut("{id}/approve")]
@@ -200,21 +205,22 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Onaylanacak randevu bulunamadı." });
             }
 
-            return Ok(new { Message = " Randevu başarıyla onaylandı." });
+            return Ok(new { Message = "Randevu başarıyla onaylandı." });
         }
 
         [HttpPut("{id}/reject")]
         [Authorize(Roles = "Veterinarian")]
         public async Task<IActionResult> RejectAppointment(Guid id)
         {
-            var isSuccess = await _appointmentService.CancelAppointmentAsync(id);
+            
+            var result = await _appointmentService.CancelAppointmentAsync(id);
 
-            if (!isSuccess)
+            if (!result.IsSuccess)
             {
-                return NotFound(new { Message = "Reddedilecek randevu bulunamadı." });
+                return BadRequest(new { Message = "Randevu reddedilemedi/iptal edilemedi.", Error = result.ErrorMessage });
             }
 
-            return Ok(new { Message = "Randevu veteriner tarafından reddedildi/iptal edildi." });
+            return Ok(new { Message = "Randevu veteriner tarafından reddedildi ve varsa ücret iade edildi." });
         }
     }
 }

@@ -11,7 +11,7 @@ namespace VeterinaryMarketplace.Core.Entities
         public DateTime AppointmentTime { get; set; }
         public decimal Price { get; set; }
         public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
-
+        public bool IsCancelled { get; set; } = false;
         public enum AppointmentStatus
         {
             Pending = 1,
