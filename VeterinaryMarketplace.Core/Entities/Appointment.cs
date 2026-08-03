@@ -21,6 +21,8 @@ namespace VeterinaryMarketplace.Core.Entities
         }
 
         public string? TransactionID { get; set; }
+        public bool IsPaid { get; set; } = false;
+        public string? PaymentTransactionId { get; set; }
 
         
         public string? VeterinarianNote { get; set; }

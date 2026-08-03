@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using VeterinaryMarketplace.Core.Entities;
+using VeterinaryMarketplace.Core.Options;
 using VeterinaryMarketplace.Core.Repositories;
 using VeterinaryMarketplace.Core.Services;
 using VeterinaryMarketplace.Data.Contexts;
@@ -68,6 +69,8 @@ builder.Services.AddScoped<ITreatmentService, TreatmentService>();
 builder.Services.AddScoped<IWorkingHourService, WorkingHourService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IPetService, PetService>();
+builder.Services.Configure<IyzicoOptions>(builder.Configuration.GetSection("IyzicoOptions"));
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IVeterinarianDetailService, VeterinarianDetailService>();
 builder.Services.AddAutoMapper(cfg =>
 {

@@ -1,0 +1,44 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using VeterinaryMarketplace.Core.DTOs.Payment;
+using VeterinaryMarketplace.Core.Services;
+
+namespace VeterinaryMarketplace.API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize] 
+    public class PaymentsController : ControllerBase
+    {
+        private readonly IPaymentService _paymentService;
+
+        public PaymentsController(IPaymentService paymentService)
+        {
+            _paymentService = paymentService;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDto requestDto)
+        {
+            
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "Kullanıcı kimliği doğrulanamadı. Lütfen tekrar giriş yapın." });
+            }
+
+            
+            var result = await _paymentService.ProcessPaymentAsync(requestDto, userId);
+
+            if (result.IsSuccess)
+            {
+                return Ok(new { Message = "Ödeme işlemi başarıyla tamamlandı!" });
+            }
+
+            
+            return BadRequest(new { Message = "Ödeme başarısız.", Error = result.ErrorMessage });
+        }
+    }
+}
