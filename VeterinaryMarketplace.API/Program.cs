@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -72,6 +72,7 @@ builder.Services.AddScoped<IPetService, PetService>();
 builder.Services.Configure<IyzicoOptions>(builder.Configuration.GetSection("IyzicoOptions"));
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IVeterinarianDetailService, VeterinarianDetailService>();
+builder.Services.AddScoped<IIyzicoOnboardingService, IyzicoOnboardingService>();
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MapProfile>();
@@ -104,7 +105,15 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero 
     };
 });
-
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
+       .AllowAnyHeader()
+       .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -114,7 +123,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

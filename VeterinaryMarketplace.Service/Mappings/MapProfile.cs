@@ -16,6 +16,7 @@ namespace VeterinaryMarketplace.Service.Mappings
         {
             CreateMap<AppointmentCreateDto, Appointment>();
             CreateMap<Appointment, AppointmentDto>()
+            .ForMember(dest => dest.PetId, opt => opt.MapFrom(src => src.Pet.Id))
             .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Pet.Name))
             .ForMember(dest => dest.VeterinarianInfo, opt => opt.MapFrom(src => src.Veterinarian.Uzmanlik))
             .ForMember(dest => dest.ClinicName, opt => opt.MapFrom(src => src.Veterinarian.Clinic.Name))
@@ -34,7 +35,9 @@ namespace VeterinaryMarketplace.Service.Mappings
             CreateMap<PetCreateDto, Pet>();
             CreateMap<PetUpdateDto, Pet>();
 
-            CreateMap<VeterinarianDetail, VeterinarianDto>();
+            CreateMap<VeterinarianDetail, VeterinarianDto>()
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User.FirstName + " " + src.User.LastName))
+            .ForMember(dest => dest.ClinicName, opt => opt.MapFrom(src => src.Clinic.Name));
             CreateMap<VeterinarianCreateDto, VeterinarianDetail>();
 
             CreateMap<Treatment, TreatmentDto>().ReverseMap();

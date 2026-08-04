@@ -20,7 +20,10 @@ namespace VeterinaryMarketplace.Service.Services
 
         public async Task<List<VeterinarianDetail>> GetAllWithClinicAsync()
         {
-            return await _repository.Where(x => true).Include(v => v.Clinic).ToListAsync();
+            return await _repository.Where(x => true)
+                .Include(v => v.Clinic)
+                .Include(v => v.User)
+                .ToListAsync();
         }
 
         public async Task<List<VeterinarianDetail>> GetApprovedWithClinicAsync(Guid? clinicId)
@@ -30,12 +33,18 @@ namespace VeterinaryMarketplace.Service.Services
             {
                 query = query.Where(v => v.ClinicId == clinicId.Value);
             }
-            return await query.Include(v => v.Clinic).ToListAsync();
+            return await query
+                .Include(v => v.Clinic)
+                .Include(v => v.User)
+                .ToListAsync();
         }
 
         public async Task<VeterinarianDetail?> GetByUserIdAsync(string userId)
         {
-            return await _repository.Where(x => x.UserId == userId).FirstOrDefaultAsync();
+            return await _repository.Where(x => x.UserId == userId)
+                .Include(v => v.User)
+                .Include(v => v.Clinic)
+                .FirstOrDefaultAsync();
         }
     }
 }

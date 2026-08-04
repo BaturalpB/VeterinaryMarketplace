@@ -74,7 +74,11 @@ namespace VeterinaryMarketplace.Service.Services
         public async Task<(bool IsSuccess, string? ErrorMessage)> ProcessPaymentAsync(PaymentRequestDto requestDto, string userId)
         {
             
-            var appointment = await _appointmentRepository.GetByIdAsync(requestDto.AppointmentId);
+            var appointment = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                _appointmentRepository.Where(a => a.Id == requestDto.AppointmentId)
+                .Include(a => a.Veterinarian)
+                .ThenInclude(v => v.Clinic)
+            );
 
             if (appointment == null)
                 return (false, "Ödeme yapılmak istenen randevu bulunamadı.");
@@ -155,6 +159,16 @@ namespace VeterinaryMarketplace.Service.Services
                 ItemType = BasketItemType.VIRTUAL.ToString(),
                 Price = formattedPrice
             };
+
+            // Eğer kliniğin İyzico SubMerchantKey'i varsa Pazaryeri Dağıtımı Yap
+            if (appointment.Veterinarian?.Clinic?.SubMerchantKey != null)
+            {
+                item.SubMerchantKey = appointment.Veterinarian.Clinic.SubMerchantKey;
+                // %10 Komisyon kesintisi hesaplanıyor
+                decimal subMerchantShare = appointment.Price * 0.90m;
+                item.SubMerchantPrice = subMerchantShare.ToString(new CultureInfo("en-US"));
+            }
+
             basketItems.Add(item);
             request.BasketItems = basketItems;
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace VeterinaryMarketplace.Core.DTOs
 {
@@ -11,10 +11,12 @@ namespace VeterinaryMarketplace.Core.DTOs
         public Guid ClinicId { get; set; }
         public string ClinicName { get; set; }
 
+        public string FullName { get; set; }
         public string Uzmanlik { get; set; }
         public TimeSpan Baslangic { get; set; }
         public TimeSpan Bitis { get; set; }
         public decimal CommissionRate { get; set; }
         public bool ISAproved { get; set; }
+        public bool IsEmergencyClosed { get; set; }
     }
 }

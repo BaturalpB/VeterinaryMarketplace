@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -32,6 +32,14 @@ namespace VeterinaryMarketplace.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var treatments = await _treatmentService.GetMyTreatmentsAsync(userId);
 
+            return Ok(treatments);
+        }
+
+        [HttpGet("user/{userId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetTreatmentsByUser(string userId)
+        {
+            var treatments = await _treatmentService.GetMyTreatmentsAsync(userId);
             return Ok(treatments);
         }
 

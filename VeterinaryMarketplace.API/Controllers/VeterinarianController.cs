@@ -107,6 +107,23 @@ namespace VeterinaryMarketplace.API.Controllers
             return Ok(new { Message = "Veteriner Onaylandı." });
         }
 
+        [HttpPatch("toggle-status")]
+        [Authorize(Roles = "Veterinarian")]
+        public async Task<IActionResult> ToggleStatus()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var veterinarian = await _veterinarianService.GetByUserIdAsync(userId);
+            if (veterinarian == null)
+            {
+                return NotFound(new { Message = "Profil bulunamadı." });
+            }
+
+            veterinarian.IsEmergencyClosed = !veterinarian.IsEmergencyClosed;
+            await _veterinarianService.UpdateAsync(veterinarian);
+
+            return Ok(new { Message = veterinarian.IsEmergencyClosed ? "Klinik geçici olarak kapatıldı." : "Klinik tekrar açıldı.", IsEmergencyClosed = veterinarian.IsEmergencyClosed });
+        }
+
         [HttpGet("approved")]
         public async Task<IActionResult> GetApprovedVeterinarians([FromQuery] Guid? clinicId)
         {

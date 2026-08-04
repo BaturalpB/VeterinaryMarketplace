@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace VeterinaryMarketplace.Core.Entities
@@ -16,6 +16,7 @@ namespace VeterinaryMarketplace.Core.Entities
         public string SubMerchantKey { get; set; }
         public decimal CommissionRate { get; set; }
         public bool ISAproved { get; set; } = false;
+        public bool IsEmergencyClosed { get; set; } = false;
 
         public virtual AppUser User { get; set; }
         public virtual Clinic Clinic { get; set; } 

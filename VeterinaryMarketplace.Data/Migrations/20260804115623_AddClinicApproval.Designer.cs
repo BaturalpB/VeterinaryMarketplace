@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VeterinaryMarketplace.Data.Contexts;
 
@@ -11,9 +12,11 @@ using VeterinaryMarketplace.Data.Contexts;
 namespace VeterinaryMarketplace.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804115623_AddClinicApproval")]
+    partial class AddClinicApproval
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -380,16 +383,10 @@ namespace VeterinaryMarketplace.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("CompanyTitle")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("District")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Iban")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsApproved")
                         .HasColumnType("bit");
@@ -407,15 +404,6 @@ namespace VeterinaryMarketplace.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("SubMerchantKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TaxNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TaxOffice")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

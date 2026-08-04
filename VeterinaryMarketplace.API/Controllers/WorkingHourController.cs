@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -30,6 +30,14 @@ namespace VeterinaryMarketplace.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var workinghours = await _workinghourService.GetMyWorkingHourAsync(userId);
 
+            return Ok(workinghours);
+        }
+
+        [HttpGet("vet/{vetId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetVetWorkingHours(string vetId)
+        {
+            var workinghours = await _workinghourService.GetMyWorkingHourAsync(vetId);
             return Ok(workinghours);
         }
 

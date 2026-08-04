@@ -24,6 +24,7 @@ namespace VeterinaryMarketplace.API.Controllers
         private readonly IService<Pet> _petService;
         private readonly IService<VeterinarianDetail> _veterinarianDetailService;
         private readonly IService<Clinic> _clinicService;
+        private readonly IService<Treatment> _treatmentDbService;
         private readonly IMapper _mapper;
         private readonly IValidator<AppointmentCreateDto> _createValidator;
 
@@ -32,6 +33,7 @@ namespace VeterinaryMarketplace.API.Controllers
             IService<Pet> petService,
             IService<VeterinarianDetail> veterinarianDetailService,
             IService<Clinic> clinicService,
+            IService<Treatment> treatmentDbService,
             IMapper mapper,
             IValidator<AppointmentCreateDto> createValidator)
         {
@@ -39,6 +41,7 @@ namespace VeterinaryMarketplace.API.Controllers
             _petService = petService;
             _veterinarianDetailService = veterinarianDetailService;
             _clinicService = clinicService;
+            _treatmentDbService = treatmentDbService;
             _mapper = mapper;
             _createValidator = createValidator;
         }
@@ -77,7 +80,13 @@ namespace VeterinaryMarketplace.API.Controllers
             {
                 foreach (var treatmentId in createDto.TreatmentIds)
                 {
-                    decimal itemPrice = 150m;
+                    var treatment = await _treatmentDbService.Where(t => t.Id == treatmentId).FirstOrDefaultAsync();
+                    if (treatment == null)
+                    {
+                        return NotFound(new { Message = "Seçilen tedavi bulunamadı." });
+                    }
+
+                    decimal itemPrice = treatment.Price;
                     totalPrice += itemPrice;
 
                     appointmentItems.Add(new AppointmentItem
@@ -98,7 +107,7 @@ namespace VeterinaryMarketplace.API.Controllers
 
             await _appointmentService.AddAsync(newAppointment);
 
-            return Ok(new { Message = "Randevu ve seçilen tedaviler başarıyla oluşturuldu!" });
+            return Ok(new { Message = "Randevu ve seçilen tedaviler başarıyla oluşturuldu!", AppointmentId = newAppointment.Id });
         }
 
         [HttpGet("my-appointments")]
@@ -168,7 +177,7 @@ namespace VeterinaryMarketplace.API.Controllers
         public async Task<IActionResult> CancelAppointment(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            // 1. Güvenlik: Kullanıcının kendi randevusu mu kontrolü
+            
             var appointment = await _appointmentService.Where(a => a.Pet.OwnerId == userId && a.Id == id).FirstOrDefaultAsync();
 
             if (appointment == null)
@@ -176,14 +185,12 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Randevu bulunamadı veya bu işlem için yetkiniz yok." });
             }
 
-            // 2. İş Kuralı: 24 saat kontrolü
             var timeDifference = appointment.AppointmentTime - DateTime.Now;
             if (timeDifference.TotalHours < 24)
             {
                 return BadRequest(new { Message = "Randevuya 24 saatten az kaldığı için iptal işlemi yapılamaz." });
             }
 
-            // 3. İptal ve İade Motorunu (PaymentService ile entegre) tetikle!
             var result = await _appointmentService.CancelAppointmentAsync(id);
 
             if (result.IsSuccess)
