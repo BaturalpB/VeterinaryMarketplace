@@ -124,12 +124,24 @@ namespace VeterinaryMarketplace.API.Controllers
 
         [HttpGet("all-appointments")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllAppointments()
+        public async Task<IActionResult> GetAllAppointments([FromQuery] VeterinaryMarketplace.Core.DTOs.Common.PaginationFilter filter)
         {
-            var query = _appointmentService.Where(a => a.IsPaid)
+            var query = _appointmentService.Where(a => a.IsPaid);
+
+            if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<Appointment.AppointmentStatus>(filter.Status, out var parsedStatus))
+            {
+                query = query.Where(a => a.Status == parsedStatus);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            query = query
                 .Include(a => a.Pet).ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian).ThenInclude(v => v.Clinic)
-                .Include(a => a.AppointmentItems).ThenInclude(ai => ai.Treatment);
+                .Include(a => a.AppointmentItems).ThenInclude(ai => ai.Treatment)
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize);
             
             var allAppointments = await query.ToListAsync();
 
@@ -154,22 +166,36 @@ namespace VeterinaryMarketplace.API.Controllers
             }
 
             var allAppointmentsDto = _mapper.Map<List<AppointmentDto>>(allAppointments);
-            return Ok(allAppointmentsDto);
+            var pagedResult = new VeterinaryMarketplace.Core.DTOs.Common.PagedResult<AppointmentDto>(allAppointmentsDto, totalCount, filter.PageNumber, filter.PageSize);
+            return Ok(pagedResult);
         }
 
         [HttpGet("my-appointments")]
         [Authorize]
-        public async Task<IActionResult> GetMyAppointments()
+        public async Task<IActionResult> GetMyAppointments([FromQuery] VeterinaryMarketplace.Core.DTOs.Common.PaginationFilter filter)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var appointments = await _appointmentService.Where(a => a.Pet.OwnerId == userId && a.IsPaid)
+            var query = _appointmentService.Where(a => a.Pet.OwnerId == userId && a.IsPaid);
+
+            if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<Appointment.AppointmentStatus>(filter.Status, out var parsedStatus))
+            {
+                query = query.Where(a => a.Status == parsedStatus);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var appointments = await query
                 .Include(a => a.Pet)
+                    .ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
                 .Include(a => a.Review)
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ToListAsync();
 
             if (appointments == null || !appointments.Any())
@@ -188,7 +214,6 @@ namespace VeterinaryMarketplace.API.Controllers
                         if (!res.IsSuccess)
                         {
                             Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
-                            continue; 
                         }
                     }
                     apt.Status = Appointment.AppointmentStatus.Completed;
@@ -198,21 +223,34 @@ namespace VeterinaryMarketplace.API.Controllers
             }
 
             var myAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
-
-            return Ok(myAppointmentsDto);
+            var pagedResult = new VeterinaryMarketplace.Core.DTOs.Common.PagedResult<AppointmentDto>(myAppointmentsDto, totalCount, filter.PageNumber, filter.PageSize);
+            return Ok(pagedResult);
         }
 
         [HttpGet("vet-appointments")]
         [Authorize]
-        public async Task<IActionResult> GetVetAppointments()
+        public async Task<IActionResult> GetVetAppointments([FromQuery] VeterinaryMarketplace.Core.DTOs.Common.PaginationFilter filter)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var appointments = await _appointmentService.Where(a => a.Veterinarian.UserId == userId && a.IsPaid)
+            var query = _appointmentService.Where(a => a.Veterinarian.UserId == userId && a.IsPaid);
+
+            if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<Appointment.AppointmentStatus>(filter.Status, out var parsedStatus))
+            {
+                query = query.Where(a => a.Status == parsedStatus);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var appointments = await query
                 .Include(a => a.Pet)
+                    .ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ToListAsync();
 
             if (appointments == null || !appointments.Any())
@@ -231,7 +269,6 @@ namespace VeterinaryMarketplace.API.Controllers
                         if (!res.IsSuccess)
                         {
                             Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
-                            continue;
                         }
                     }
                     apt.Status = Appointment.AppointmentStatus.Completed;
@@ -241,8 +278,8 @@ namespace VeterinaryMarketplace.API.Controllers
             }
 
             var vetAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
-
-            return Ok(vetAppointmentsDto);
+            var pagedResult = new VeterinaryMarketplace.Core.DTOs.Common.PagedResult<AppointmentDto>(vetAppointmentsDto, totalCount, filter.PageNumber, filter.PageSize);
+            return Ok(pagedResult);
         }
 
         [HttpPut("{id}/status")]

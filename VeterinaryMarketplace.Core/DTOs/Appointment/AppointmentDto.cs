@@ -9,6 +9,10 @@ public class AppointmentDto
     public string VeterinarianInfo { get; set; }
     public string ClinicName { get; set; }
     public string? VeterinarianNote { get; set; }
+    public string? OwnerName { get; set; }
+    public string? PetSpecies { get; set; }
+    public string? PetBreed { get; set; }
+    public int? PetAge { get; set; }
     public List<AppointmentItemDto> AppointmentItems { get; set; }
     public VeterinaryMarketplace.Core.DTOs.Review.ReviewDto? Review { get; set; }
 }

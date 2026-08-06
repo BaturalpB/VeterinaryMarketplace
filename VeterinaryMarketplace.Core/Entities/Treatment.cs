@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace VeterinaryMarketplace.Core.Entities
 {
-    public class Treatment
+    public class Treatment : ISoftDeletable
     {
+        public bool IsDeleted { get; set; } = false;
         public Guid Id { get; set; }
         public string UserID { get; set; }
         public virtual AppUser User { get; set; }

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 
 namespace VeterinaryMarketplace.Core.Entities
 {
-    public class Review
+    public class Review : ISoftDeletable
     {
+        public bool IsDeleted { get; set; } = false;
         public Guid Id { get; set; }
 
        

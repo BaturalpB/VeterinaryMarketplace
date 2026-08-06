@@ -3,8 +3,9 @@ using System.Collections.Generic;
 
 namespace VeterinaryMarketplace.Core.Entities
 {
-    public class Clinic
+    public class Clinic : ISoftDeletable
     {
+        public bool IsDeleted { get; set; } = false;
         public Guid Id { get; set; }
         public string Name { get; set; }
 

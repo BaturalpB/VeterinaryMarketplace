@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 
 namespace VeterinaryMarketplace.Core.Entities
 {
-    public class Address 
+    public class Address : ISoftDeletable
     {
+        public bool IsDeleted { get; set; } = false;
         public Guid Id { get; set; } 
 
        

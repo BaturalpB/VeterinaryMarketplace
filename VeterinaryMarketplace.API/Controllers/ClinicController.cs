@@ -27,6 +27,7 @@ namespace VeterinaryMarketplace.API.Controllers
         private readonly IAppointmentService _appointmentService;
         private readonly IService<Treatment> _treatmentService;
         private readonly IService<WorkingHour> _workingHourService;
+        private readonly ICacheService _cacheService;
 
         public ClinicsController(
             IService<Clinic> clinicService, 
@@ -37,7 +38,8 @@ namespace VeterinaryMarketplace.API.Controllers
             IVeterinarianDetailService veterinarianDetailService,
             IAppointmentService appointmentService,
             IService<Treatment> treatmentService,
-            IService<WorkingHour> workingHourService)
+            IService<WorkingHour> workingHourService,
+            ICacheService cacheService)
         {
             _clinicService = clinicService;
             _mapper = mapper;
@@ -48,18 +50,49 @@ namespace VeterinaryMarketplace.API.Controllers
             _appointmentService = appointmentService;
             _treatmentService = treatmentService;
             _workingHourService = workingHourService;
+            _cacheService = cacheService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] VeterinaryMarketplace.Core.DTOs.Common.PaginationFilter filter)
         {
             var isAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
-            var clinics = isAdmin 
-                ? await _clinicService.GetAllAsync() 
-                : await _clinicService.Where(x => x.IsApproved == true).ToListAsync();
+            
+            var cacheKey = $"clinics_{(isAdmin ? "admin" : "user")}_page_{filter.PageNumber}_size_{filter.PageSize}_search_{filter.SearchTerm}_city_{filter.City}";
+            var cachedData = await _cacheService.GetAsync<VeterinaryMarketplace.Core.DTOs.Common.PagedResult<ClinicDto>>(cacheKey);
+            
+            if (cachedData != null)
+            {
+                return Ok(cachedData);
+            }
+
+            var query = _clinicService.Where(x => isAdmin || x.IsApproved == true);
+
+            if (!string.IsNullOrEmpty(filter.SearchTerm))
+            {
+                query = query.Where(x => x.Name.Contains(filter.SearchTerm) || x.Address.Contains(filter.SearchTerm));
+            }
+
+            if (!string.IsNullOrEmpty(filter.City))
+            {
+                query = query.Where(x => x.City == filter.City);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var clinics = await query
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
 
             var clinicDtos = _mapper.Map<List<ClinicDto>>(clinics);
-            return Ok(clinicDtos);
+
+            var pagedResult = new VeterinaryMarketplace.Core.DTOs.Common.PagedResult<ClinicDto>(
+                clinicDtos, totalCount, filter.PageNumber, filter.PageSize);
+
+            await _cacheService.SetAsync(cacheKey, pagedResult, TimeSpan.FromMinutes(15));
+
+            return Ok(pagedResult);
         }
 
         [HttpGet("{id}")]
@@ -116,6 +149,7 @@ namespace VeterinaryMarketplace.API.Controllers
             newClinic.SubMerchantKey = iyzicoResult.SubMerchantKey;
 
             await _clinicService.AddAsync(newClinic);
+            await _cacheService.RemoveByPrefixAsync("clinics_");
 
             return Ok(new { Message = "Klinik başarıyla sisteme kaydedildi.", ClinicId = newClinic.Id });
         }
@@ -157,6 +191,7 @@ namespace VeterinaryMarketplace.API.Controllers
                 }
             }
 
+            await _cacheService.RemoveByPrefixAsync("clinics_");
             return Ok(new { Message = "Klinik başarıyla onaylandı." });
         }
 
@@ -198,6 +233,7 @@ namespace VeterinaryMarketplace.API.Controllers
                 await _veterinarianDetailService.RemoveAsync(vetProfile);
             }
 
+            await _cacheService.RemoveByPrefixAsync("clinics_");
             return Ok(new { Message = "Klinik reddedildi ve ilgili veterinerlerin klinikle ilişiği kesildi." });
         }
     }
