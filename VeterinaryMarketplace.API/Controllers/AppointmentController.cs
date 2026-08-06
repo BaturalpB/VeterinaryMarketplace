@@ -71,10 +71,14 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Evcil Hayvan Bulunamadı" });
             }
 
+            var appointmentStart = createDto.AppointmentTime.AddMinutes(-30);
+            var appointmentEnd = createDto.AppointmentTime.AddMinutes(30);
+
             var isConflict = await _appointmentService.Where(a =>
                 a.VeterinarianDetailId == createDto.VeterinarianDetailId &&
-                a.AppointmentTime == createDto.AppointmentTime &&
-                a.Status != Appointment.AppointmentStatus.Cancelled).AnyAsync();
+                a.Status != Appointment.AppointmentStatus.Cancelled &&
+                a.AppointmentTime > appointmentStart && 
+                a.AppointmentTime < appointmentEnd).AnyAsync();
 
             if (isConflict)
             {
