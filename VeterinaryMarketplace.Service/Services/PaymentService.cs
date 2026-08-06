@@ -53,7 +53,7 @@ namespace VeterinaryMarketplace.Service.Services
 
             CreateCancelRequest request = new CreateCancelRequest
             {
-                PaymentId = appointment.TransactionID ?? appointment.PaymentTransactionId, // Geriye dönük uyumluluk için, PaymentId'yi kullan.
+                PaymentId = appointment.TransactionID ?? appointment.PaymentTransactionId, 
                 Ip = "85.34.78.112",
                 Locale = Locale.TR.ToString()
             };
@@ -160,11 +160,10 @@ namespace VeterinaryMarketplace.Service.Services
                 Price = formattedPrice
             };
 
-            // Eğer kliniğin İyzico SubMerchantKey'i varsa Pazaryeri Dağıtımı Yap
             if (appointment.Veterinarian?.Clinic?.SubMerchantKey != null)
             {
                 item.SubMerchantKey = appointment.Veterinarian.Clinic.SubMerchantKey;
-                // %10 Komisyon kesintisi hesaplanıyor
+               
                 decimal subMerchantShare = appointment.Price * 0.90m;
                 item.SubMerchantPrice = subMerchantShare.ToString(new CultureInfo("en-US"));
             }
@@ -177,8 +176,8 @@ namespace VeterinaryMarketplace.Service.Services
             if (payment.Status == "success")
             {
                 appointment.IsPaid = true;
-                appointment.TransactionID = payment.PaymentId; // Tüm işlemi iptal etmek için gereken Parent ID
-                appointment.PaymentTransactionId = payment.PaymentItems[0].PaymentTransactionId; // Alt üye işyerine para aktarımı (Approval) için gereken Item ID
+                appointment.TransactionID = payment.PaymentId; 
+                appointment.PaymentTransactionId = payment.PaymentItems[0].PaymentTransactionId; 
 
                 _appointmentRepository.Update(appointment);
                 await _unitOfWork.CommitAsync();

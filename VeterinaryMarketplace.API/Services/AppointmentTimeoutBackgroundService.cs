@@ -38,7 +38,6 @@ namespace VeterinaryMarketplace.API.Services
                     _logger.LogError(ex, "An error occurred while checking for expired appointments.");
                 }
 
-                // Wait 5 minutes before checking again
                 await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
 
@@ -53,7 +52,6 @@ namespace VeterinaryMarketplace.API.Services
 
             var thirtyMinutesAgo = DateTime.Now.AddMinutes(-30);
 
-            // Find all pending appointments created more than 30 minutes ago
             var expiredAppointments = await dbContext.Appointments
                 .Where(a => a.Status == Appointment.AppointmentStatus.Pending && a.CreatedAt <= thirtyMinutesAgo)
                 .ToListAsync(stoppingToken);
@@ -64,7 +62,7 @@ namespace VeterinaryMarketplace.API.Services
 
                 foreach (var apt in expiredAppointments)
                 {
-                    // CancelAppointmentAsync already handles Iyzico refunds and status updates
+                    
                     var result = await appointmentService.CancelAppointmentAsync(apt.Id);
                     
                     if (result.IsSuccess)

@@ -134,7 +134,6 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Sistemde kayıtlı herhangi bir randevu bulunamadı." });
             }
 
-            // Otomatik tamamlama kontrolü
             bool isUpdated = false;
             foreach (var apt in allAppointments)
             {
@@ -174,7 +173,6 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Size ait herhangi bir randevu bulunamadı." });
             }
 
-            // Otomatik tamamlama kontrolü (Geçmiş ve Onaylanmış randevuları Tamamlandı yap)
             bool isUpdated = false;
             foreach (var apt in appointments)
             {
@@ -186,8 +184,7 @@ namespace VeterinaryMarketplace.API.Controllers
                         if (!res.IsSuccess)
                         {
                             Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
-                            // Dilerseniz burada hata fırlatabilir veya loglayabilirsiniz. Şimdilik hataya rağmen completed olmasını engelliyorum.
-                            continue; // Onay başarısız olursa randevuyu Tamamlandı yapma.
+                            continue; 
                         }
                     }
                     apt.Status = Appointment.AppointmentStatus.Completed;
@@ -219,7 +216,6 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Size atanmış herhangi bir randevu bulunamadı." });
             }
 
-            // Otomatik tamamlama kontrolü
             bool isUpdated = false;
             foreach (var apt in appointments)
             {
@@ -259,7 +255,7 @@ namespace VeterinaryMarketplace.API.Controllers
             Appointment.Status = newStatus;
             await _appointmentService.UpdateAsync(Appointment);
 
-            // Eğer randevu "Tamamlandı" olarak işaretleniyorsa, ödemeyi kliniğe aktar (Onayla)
+
             if (newStatus == Core.Entities.Appointment.AppointmentStatus.Completed && Appointment.IsPaid && !string.IsNullOrEmpty(Appointment.PaymentTransactionId))
             {
                 var paymentResult = await _paymentService.ApprovePaymentAsync(Appointment.Id);

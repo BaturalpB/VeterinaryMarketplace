@@ -186,8 +186,6 @@ namespace VeterinaryMarketplace.API.Controllers
                 return BadRequest(new { Message = "Kullanıcı zaten veteriner rolüne sahip" });
             }
 
-            // Önceki rolleri temizleyip sadece Veterinarian yapabiliriz veya ekleyebiliriz.
-            // Genelde e-ticaret vs değilse eklemek yeterlidir. Mevcut role ekleyelim.
             await _userManager.RemoveFromRolesAsync(user, roles);
             var result = await _userManager.AddToRoleAsync(user, "Veterinarian");
 
@@ -214,7 +212,6 @@ namespace VeterinaryMarketplace.API.Controllers
                 return BadRequest(new { Message = "Kullanıcı zaten veteriner rolüne sahip değil" });
             }
 
-            // Veteriner profilini de sil (eğer varsa)
             var vetProfile = await _vetDetailService.GetByUserIdAsync(userId);
             if (vetProfile != null)
             {
@@ -313,7 +310,6 @@ namespace VeterinaryMarketplace.API.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return NotFound(new { Message = "Kullanıcı bulunamadı." });
 
-            // Sadece User veya Admin ise güncelleme izni ver (Veterinerler kısıtlanmış)
             var roles = await _userManager.GetRolesAsync(user);
             if (roles.Contains("Veterinarian"))
             {

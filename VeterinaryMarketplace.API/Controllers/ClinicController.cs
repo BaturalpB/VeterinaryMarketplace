@@ -106,9 +106,8 @@ namespace VeterinaryMarketplace.API.Controllers
             var newClinic = _mapper.Map<Clinic>(clinicCreateDto);
             newClinic.Id = Guid.NewGuid();
             newClinic.ManagerId = userId;
-            newClinic.IsApproved = null; // Herkesin açtığı klinik onaya düşmeli ki onaylanırken veteriner profili yaratılabilsin.
+            newClinic.IsApproved = null; 
 
-            // İyzico'da SubMerchant Oluşturma
             var iyzicoResult = await _iyzicoOnboardingService.CreateSubMerchantAsync(newClinic, user);
             if (!iyzicoResult.IsSuccess)
             {
@@ -171,13 +170,11 @@ namespace VeterinaryMarketplace.API.Controllers
             clinic.IsApproved = false;
             await _clinicService.UpdateAsync(clinic);
 
-            // Kliniğe ait tüm veteriner profillerini bul ve sil (veya rollerini al)
             var clinicVets = await _veterinarianDetailService.Where(v => v.ClinicId == id).ToListAsync();
             foreach (var vetProfile in clinicVets)
             {
                 var userId = vetProfile.UserId;
 
-                // 1. Veterinerin Bekleyen/Onaylanmış Randevularını iptal et (İptal edilirse iade sağlanır)
                 var vetAppointments = await _appointmentService.Where(a => a.VeterinarianDetailId == vetProfile.Id).ToListAsync();
                 foreach (var apt in vetAppointments)
                 {
@@ -187,21 +184,17 @@ namespace VeterinaryMarketplace.API.Controllers
                     }
                 }
 
-                // 2. Veterinerin Tedavilerini temizle
                 var userTreatments = await _treatmentService.Where(t => t.UserID == userId).ToListAsync();
                 if (userTreatments.Any())
                 {
                     await _treatmentService.RemoveRangeAsync(userTreatments);
                 }
 
-                // 3. Veterinerin Çalışma Saatlerini temizle
                 var userWorkingHours = await _workingHourService.Where(w => w.UserId == userId).ToListAsync();
                 if (userWorkingHours.Any())
                 {
                     await _workingHourService.RemoveRangeAsync(userWorkingHours);
                 }
-
-                // 4. Veteriner Profilini sil (Kullanıcı veteriner rolünde kalmaya devam eder, ancak profili ve kliniği olmaz)
                 await _veterinarianDetailService.RemoveAsync(vetProfile);
             }
 

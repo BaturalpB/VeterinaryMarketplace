@@ -54,7 +54,7 @@ namespace VeterinaryMarketplace.API.Controllers
             return BadRequest(new { Message = "İptal işlemi başarısız.", Error = result.ErrorMessage });
         }
         [HttpPost("approve/{appointmentId}")]
-        [Authorize(Roles = "Admin")] // Sadece Admin onaylayabilir
+        [Authorize(Roles = "Admin")] 
         public async Task<IActionResult> ApprovePayment(Guid appointmentId)
         {
             var result = await _paymentService.ApprovePaymentAsync(appointmentId);
