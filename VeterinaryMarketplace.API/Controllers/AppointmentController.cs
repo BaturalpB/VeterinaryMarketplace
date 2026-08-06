@@ -138,6 +138,7 @@ namespace VeterinaryMarketplace.API.Controllers
             query = query
                 .Include(a => a.Pet).ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian).ThenInclude(v => v.Clinic)
+                .Include(a => a.Veterinarian).ThenInclude(v => v.User)
                 .Include(a => a.AppointmentItems).ThenInclude(ai => ai.Treatment)
                 .OrderByDescending(a => a.CreatedAt)
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
@@ -148,21 +149,6 @@ namespace VeterinaryMarketplace.API.Controllers
             if (allAppointments == null || !allAppointments.Any())
             {
                 return NotFound(new { Message = "Sistemde kayıtlı herhangi bir randevu bulunamadı." });
-            }
-
-            bool isUpdated = false;
-            foreach (var apt in allAppointments)
-            {
-                if (apt.Status == Appointment.AppointmentStatus.Approved && apt.AppointmentTime <= DateTime.Now)
-                {
-                    apt.Status = Appointment.AppointmentStatus.Completed;
-                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
-                    {
-                        await _paymentService.ApprovePaymentAsync(apt.Id);
-                    }
-                    await _appointmentService.UpdateAsync(apt);
-                    isUpdated = true;
-                }
             }
 
             var allAppointmentsDto = _mapper.Map<List<AppointmentDto>>(allAppointments);
@@ -190,6 +176,8 @@ namespace VeterinaryMarketplace.API.Controllers
                     .ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
+                .Include(a => a.Veterinarian)
+                    .ThenInclude(v => v.User)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
                 .Include(a => a.Review)
@@ -201,25 +189,6 @@ namespace VeterinaryMarketplace.API.Controllers
             if (appointments == null || !appointments.Any())
             {
                 return NotFound(new { Message = "Size ait herhangi bir randevu bulunamadı." });
-            }
-
-            bool isUpdated = false;
-            foreach (var apt in appointments)
-            {
-                if (apt.Status == Appointment.AppointmentStatus.Approved && apt.AppointmentTime <= DateTime.Now)
-                {
-                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
-                    {
-                        var res = await _paymentService.ApprovePaymentAsync(apt.Id);
-                        if (!res.IsSuccess)
-                        {
-                            Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
-                        }
-                    }
-                    apt.Status = Appointment.AppointmentStatus.Completed;
-                    await _appointmentService.UpdateAsync(apt);
-                    isUpdated = true;
-                }
             }
 
             var myAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
@@ -246,6 +215,8 @@ namespace VeterinaryMarketplace.API.Controllers
                     .ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
+                .Include(a => a.Veterinarian)
+                    .ThenInclude(v => v.User)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
                 .OrderByDescending(a => a.CreatedAt)
@@ -256,25 +227,6 @@ namespace VeterinaryMarketplace.API.Controllers
             if (appointments == null || !appointments.Any())
             {
                 return NotFound(new { Message = "Size atanmış herhangi bir randevu bulunamadı." });
-            }
-
-            bool isUpdated = false;
-            foreach (var apt in appointments)
-            {
-                if (apt.Status == Appointment.AppointmentStatus.Approved && apt.AppointmentTime <= DateTime.Now)
-                {
-                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
-                    {
-                        var res = await _paymentService.ApprovePaymentAsync(apt.Id);
-                        if (!res.IsSuccess)
-                        {
-                            Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
-                        }
-                    }
-                    apt.Status = Appointment.AppointmentStatus.Completed;
-                    await _appointmentService.UpdateAsync(apt);
-                    isUpdated = true;
-                }
             }
 
             var vetAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
@@ -307,6 +259,18 @@ namespace VeterinaryMarketplace.API.Controllers
                 else
                 {
                     return Ok(new { Message = $"Randevu tamamlandı ancak ödeme aktarımı başarısız oldu: {paymentResult.ErrorMessage}" });
+                }
+            }
+            else if (newStatus == Core.Entities.Appointment.AppointmentStatus.Cancelled && Appointment.IsPaid)
+            {
+                var refundResult = await _paymentService.CancelPaymentAsync(Appointment.Id);
+                if (refundResult.IsSuccess)
+                {
+                    return Ok(new { Message = "Randevu başarıyla reddedildi ve ücret iadesi yapıldı." });
+                }
+                else
+                {
+                    return Ok(new { Message = $"Randevu reddedildi ancak ücret iadesi sırasında bir hata oluştu: {refundResult.ErrorMessage}" });
                 }
             }
 

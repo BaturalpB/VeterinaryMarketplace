@@ -209,14 +209,21 @@ namespace VeterinaryMarketplace.Service.Services
                 PaymentTransactionId = appointment.PaymentTransactionId
             };
 
-            Approval approval = await Task.Run(() => Approval.Create(request, options));
-
-            if (approval.Status == "success")
+            try
             {
-                return (true, null);
-            }
+                Approval approval = await Task.Run(() => Approval.Create(request, options));
 
-            return (false, approval.ErrorMessage);
+                if (approval.Status == "success")
+                {
+                    return (true, null);
+                }
+
+                return (false, approval.ErrorMessage);
+            }
+            catch (Exception ex)
+            {
+                return (false, "İyzico ödeme onayı sırasında bir hata oluştu: " + ex.Message);
+            }
         }
     }
 }

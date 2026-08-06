@@ -22,7 +22,7 @@ namespace VeterinaryMarketplace.Service.Mappings
             .ForMember(dest => dest.PetSpecies, opt => opt.MapFrom(src => src.Pet.Species))
             .ForMember(dest => dest.PetBreed, opt => opt.MapFrom(src => src.Pet.Breed))
             .ForMember(dest => dest.PetAge, opt => opt.MapFrom(src => src.Pet.Age))
-            .ForMember(dest => dest.VeterinarianInfo, opt => opt.MapFrom(src => src.Veterinarian.Uzmanlik))
+            .ForMember(dest => dest.VeterinarianInfo, opt => opt.MapFrom(src => src.Veterinarian.User.FirstName + " " + src.Veterinarian.User.LastName))
             .ForMember(dest => dest.ClinicName, opt => opt.MapFrom(src => src.Veterinarian.Clinic.Name))
             .ReverseMap();
 

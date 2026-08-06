@@ -54,11 +54,12 @@ namespace VeterinaryMarketplace.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] VeterinaryMarketplace.Core.DTOs.Common.PaginationFilter filter)
+        public async Task<IActionResult> GetAll([FromQuery] VeterinaryMarketplace.Core.DTOs.Common.PaginationFilter filter, [FromQuery] bool adminView = false)
         {
             var isAdmin = User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
+            var showUnapproved = isAdmin && adminView;
             
-            var cacheKey = $"clinics_{(isAdmin ? "admin" : "user")}_page_{filter.PageNumber}_size_{filter.PageSize}_search_{filter.SearchTerm}_city_{filter.City}";
+            var cacheKey = $"clinics_{(showUnapproved ? "admin" : "public")}_page_{filter.PageNumber}_size_{filter.PageSize}_search_{filter.SearchTerm}_city_{filter.City}";
             var cachedData = await _cacheService.GetAsync<VeterinaryMarketplace.Core.DTOs.Common.PagedResult<ClinicDto>>(cacheKey);
             
             if (cachedData != null)
@@ -66,7 +67,7 @@ namespace VeterinaryMarketplace.API.Controllers
                 return Ok(cachedData);
             }
 
-            var query = _clinicService.Where(x => isAdmin || x.IsApproved == true);
+            var query = _clinicService.Where(x => showUnapproved || x.IsApproved == true);
 
             if (!string.IsNullOrEmpty(filter.SearchTerm))
             {
