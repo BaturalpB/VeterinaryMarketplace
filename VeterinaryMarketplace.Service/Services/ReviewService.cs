@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -10,6 +10,7 @@ using VeterinaryMarketplace.Core.DTOs.Review;
 using VeterinaryMarketplace.Core.Entities;
 using VeterinaryMarketplace.Core.Repositories;
 using VeterinaryMarketplace.Core.Services;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace VeterinaryMarketplace.Service.Services
@@ -101,6 +102,18 @@ namespace VeterinaryMarketplace.Service.Services
             await RemoveAsync(review);
 
             return (true, null);
+        }
+
+        public async Task<IEnumerable<ReviewDto>> GetClinicReviewsAsync(Guid clinicId)
+        {
+            var reviews = await Where(r => r.Appointment.Veterinarian.ClinicId == clinicId)
+                .Include(r => r.Appointment)
+                    .ThenInclude(a => a.Pet)
+                        .ThenInclude(p => p.Owner)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
+            return _mapper.Map<IEnumerable<ReviewDto>>(reviews);
         }
     }
 }

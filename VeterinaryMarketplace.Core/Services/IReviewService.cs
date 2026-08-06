@@ -1,4 +1,4 @@
-﻿using VeterinaryMarketplace.Core.Entities;
+using VeterinaryMarketplace.Core.Entities;
 using VeterinaryMarketplace.Core.DTOs.Review;
 
 namespace VeterinaryMarketplace.Core.Services
@@ -8,5 +8,6 @@ namespace VeterinaryMarketplace.Core.Services
         Task<(bool IsSuccess, string? ErrorMessage)> CreateReviewAsync(ReviewCreateDto dto, string userId);
         Task<(bool IsSuccess, string? ErrorMessage)> UpdateReviewAsync(ReviewUpdateDto dto, string userId);
         Task<(bool IsSuccess, string? ErrorMessage)> DeleteReviewAsync(Guid reviewId, string userId);
+        Task<IEnumerable<ReviewDto>> GetClinicReviewsAsync(Guid clinicId);
     }
 }

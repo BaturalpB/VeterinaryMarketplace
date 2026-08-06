@@ -23,14 +23,31 @@ namespace VeterinaryMarketplace.API.Controllers
         private readonly IValidator<ClinicCreateDto> _createValidator;
         private readonly IIyzicoOnboardingService _iyzicoOnboardingService;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IVeterinarianDetailService _veterinarianDetailService;
+        private readonly IAppointmentService _appointmentService;
+        private readonly IService<Treatment> _treatmentService;
+        private readonly IService<WorkingHour> _workingHourService;
 
-        public ClinicsController(IService<Clinic> clinicService, IMapper mapper, IValidator<ClinicCreateDto> createValidator, IIyzicoOnboardingService iyzicoOnboardingService, UserManager<AppUser> userManager)
+        public ClinicsController(
+            IService<Clinic> clinicService, 
+            IMapper mapper, 
+            IValidator<ClinicCreateDto> createValidator, 
+            IIyzicoOnboardingService iyzicoOnboardingService, 
+            UserManager<AppUser> userManager, 
+            IVeterinarianDetailService veterinarianDetailService,
+            IAppointmentService appointmentService,
+            IService<Treatment> treatmentService,
+            IService<WorkingHour> workingHourService)
         {
             _clinicService = clinicService;
             _mapper = mapper;
             _createValidator = createValidator;
             _iyzicoOnboardingService = iyzicoOnboardingService;
             _userManager = userManager;
+            _veterinarianDetailService = veterinarianDetailService;
+            _appointmentService = appointmentService;
+            _treatmentService = treatmentService;
+            _workingHourService = workingHourService;
         }
 
         [HttpGet]
@@ -89,7 +106,7 @@ namespace VeterinaryMarketplace.API.Controllers
             var newClinic = _mapper.Map<Clinic>(clinicCreateDto);
             newClinic.Id = Guid.NewGuid();
             newClinic.ManagerId = userId;
-            newClinic.IsApproved = User.IsInRole("Admin") ? true : null;
+            newClinic.IsApproved = null; // Herkesin açtığı klinik onaya düşmeli ki onaylanırken veteriner profili yaratılabilsin.
 
             // İyzico'da SubMerchant Oluşturma
             var iyzicoResult = await _iyzicoOnboardingService.CreateSubMerchantAsync(newClinic, user);
@@ -113,6 +130,34 @@ namespace VeterinaryMarketplace.API.Controllers
 
             clinic.IsApproved = true;
             await _clinicService.UpdateAsync(clinic);
+
+            if (!string.IsNullOrEmpty(clinic.ManagerId))
+            {
+                var existingVet = await _veterinarianDetailService.GetByUserIdAsync(clinic.ManagerId);
+                if (existingVet == null)
+                {
+                    var newVet = new VeterinarianDetail
+                    {
+                        UserId = clinic.ManagerId,
+                        ClinicId = clinic.Id,
+                        Uzmanlik = "Klinik Yöneticisi",
+                        Baslangic = new TimeSpan(9, 0, 0),
+                        Bitis = new TimeSpan(18, 0, 0),
+                        IBAN = clinic.Iban ?? "",
+                        SubMerchantKey = clinic.SubMerchantKey ?? "",
+                        CommissionRate = 10m,
+                        ISAproved = true
+                    };
+                    await _veterinarianDetailService.AddAsync(newVet);
+                }
+                else
+                {
+                    existingVet.ClinicId = clinic.Id;
+                    existingVet.ISAproved = true;
+                    await _veterinarianDetailService.UpdateAsync(existingVet);
+                }
+            }
+
             return Ok(new { Message = "Klinik başarıyla onaylandı." });
         }
 
@@ -125,7 +170,42 @@ namespace VeterinaryMarketplace.API.Controllers
 
             clinic.IsApproved = false;
             await _clinicService.UpdateAsync(clinic);
-            return Ok(new { Message = "Klinik reddedildi." });
+
+            // Kliniğe ait tüm veteriner profillerini bul ve sil (veya rollerini al)
+            var clinicVets = await _veterinarianDetailService.Where(v => v.ClinicId == id).ToListAsync();
+            foreach (var vetProfile in clinicVets)
+            {
+                var userId = vetProfile.UserId;
+
+                // 1. Veterinerin Bekleyen/Onaylanmış Randevularını iptal et (İptal edilirse iade sağlanır)
+                var vetAppointments = await _appointmentService.Where(a => a.VeterinarianDetailId == vetProfile.Id).ToListAsync();
+                foreach (var apt in vetAppointments)
+                {
+                    if (apt.Status == Appointment.AppointmentStatus.Pending || apt.Status == Appointment.AppointmentStatus.Approved)
+                    {
+                        await _appointmentService.CancelAppointmentAsync(apt.Id);
+                    }
+                }
+
+                // 2. Veterinerin Tedavilerini temizle
+                var userTreatments = await _treatmentService.Where(t => t.UserID == userId).ToListAsync();
+                if (userTreatments.Any())
+                {
+                    await _treatmentService.RemoveRangeAsync(userTreatments);
+                }
+
+                // 3. Veterinerin Çalışma Saatlerini temizle
+                var userWorkingHours = await _workingHourService.Where(w => w.UserId == userId).ToListAsync();
+                if (userWorkingHours.Any())
+                {
+                    await _workingHourService.RemoveRangeAsync(userWorkingHours);
+                }
+
+                // 4. Veteriner Profilini sil (Kullanıcı veteriner rolünde kalmaya devam eder, ancak profili ve kliniği olmaz)
+                await _veterinarianDetailService.RemoveAsync(vetProfile);
+            }
+
+            return Ok(new { Message = "Klinik reddedildi ve ilgili veterinerlerin klinikle ilişiği kesildi." });
         }
     }
 }

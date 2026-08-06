@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace VeterinaryMarketplace.API.Controllers
 {
@@ -25,6 +26,10 @@ namespace VeterinaryMarketplace.API.Controllers
         private readonly IValidator<LoginDto> _loginValidator;
         private readonly IValidator<RefreshTokenRequestDto> _refreshTokenValidator;
         private readonly IVeterinarianDetailService _vetDetailService;
+        private readonly IAppointmentService _appointmentService;
+        private readonly IService<Pet> _petService;
+        private readonly IService<Treatment> _treatmentService;
+        private readonly IService<WorkingHour> _workingHourService;
 
         public AuthController(
             UserManager<AppUser> userManager,
@@ -34,7 +39,11 @@ namespace VeterinaryMarketplace.API.Controllers
             IValidator<RegisterDto> registerValidator,
             IValidator<LoginDto> loginValidator,
             IValidator<RefreshTokenRequestDto> refreshTokenValidator,
-            IVeterinarianDetailService vetDetailService)
+            IVeterinarianDetailService vetDetailService,
+            IAppointmentService appointmentService,
+            IService<Pet> petService,
+            IService<Treatment> treatmentService,
+            IService<WorkingHour> workingHourService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -44,6 +53,10 @@ namespace VeterinaryMarketplace.API.Controllers
             _loginValidator = loginValidator;
             _refreshTokenValidator = refreshTokenValidator;
             _vetDetailService = vetDetailService;
+            _appointmentService = appointmentService;
+            _petService = petService;
+            _treatmentService = treatmentService;
+            _workingHourService = workingHourService;
         }
 
         [HttpPost("register")]
@@ -205,7 +218,24 @@ namespace VeterinaryMarketplace.API.Controllers
             var vetProfile = await _vetDetailService.GetByUserIdAsync(userId);
             if (vetProfile != null)
             {
+                var vetAppointments = await _appointmentService.Where(a => a.VeterinarianDetailId == vetProfile.Id).ToListAsync();
+                if (vetAppointments.Any())
+                {
+                    await _appointmentService.RemoveRangeAsync(vetAppointments);
+                }
                 await _vetDetailService.RemoveAsync(vetProfile);
+            }
+
+            var userTreatments = await _treatmentService.Where(t => t.UserID == userId).ToListAsync();
+            if (userTreatments.Any())
+            {
+                await _treatmentService.RemoveRangeAsync(userTreatments);
+            }
+
+            var userWorkingHours = await _workingHourService.Where(w => w.UserId == userId).ToListAsync();
+            if (userWorkingHours.Any())
+            {
+                await _workingHourService.RemoveRangeAsync(userWorkingHours);
             }
 
             await _userManager.RemoveFromRolesAsync(user, roles);
@@ -229,11 +259,41 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Kullanıcı bulunamadı" });
             }
             
-            // Profil varsa silelim ki constraint hatası olmasın.
             var vetProfile = await _vetDetailService.GetByUserIdAsync(userId);
             if (vetProfile != null)
             {
+                var vetAppointments = await _appointmentService.Where(a => a.VeterinarianDetailId == vetProfile.Id).ToListAsync();
+                if (vetAppointments.Any())
+                {
+                    await _appointmentService.RemoveRangeAsync(vetAppointments);
+                }
                 await _vetDetailService.RemoveAsync(vetProfile);
+            }
+
+            var userPets = await _petService.Where(p => p.OwnerId == userId).ToListAsync();
+            foreach (var pet in userPets)
+            {
+                var petAppointments = await _appointmentService.Where(a => a.PetId == pet.Id).ToListAsync();
+                if (petAppointments.Any())
+                {
+                    await _appointmentService.RemoveRangeAsync(petAppointments);
+                }
+            }
+            if (userPets.Any())
+            {
+                await _petService.RemoveRangeAsync(userPets);
+            }
+
+            var userTreatments = await _treatmentService.Where(t => t.UserID == userId).ToListAsync();
+            if (userTreatments.Any())
+            {
+                await _treatmentService.RemoveRangeAsync(userTreatments);
+            }
+
+            var userWorkingHours = await _workingHourService.Where(w => w.UserId == userId).ToListAsync();
+            if (userWorkingHours.Any())
+            {
+                await _workingHourService.RemoveRangeAsync(userWorkingHours);
             }
 
             var result = await _userManager.DeleteAsync(user);

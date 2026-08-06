@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -58,6 +58,13 @@ namespace VeterinaryMarketplace.API.Controllers
                 return Ok("Değerlendirme başarıyla silindi.");
             }
             return BadRequest(result.ErrorMessage);
+        }
+
+        [HttpGet("clinic/{clinicId}")]
+        public async Task<IActionResult> GetClinicReviews(Guid clinicId)
+        {
+            var reviews = await _reviewService.GetClinicReviewsAsync(clinicId);
+            return Ok(reviews);
         }
     }
 }

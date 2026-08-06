@@ -10,6 +10,7 @@ public class AppointmentDto
     public string ClinicName { get; set; }
     public string? VeterinarianNote { get; set; }
     public List<AppointmentItemDto> AppointmentItems { get; set; }
+    public VeterinaryMarketplace.Core.DTOs.Review.ReviewDto? Review { get; set; }
 }
 
 public class AppointmentItemDto

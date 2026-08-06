@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using VeterinaryMarketplace.Core.DTOs.Payment;
@@ -52,6 +52,19 @@ namespace VeterinaryMarketplace.API.Controllers
             }
 
             return BadRequest(new { Message = "İptal işlemi başarısız.", Error = result.ErrorMessage });
+        }
+        [HttpPost("approve/{appointmentId}")]
+        [Authorize(Roles = "Admin")] // Sadece Admin onaylayabilir
+        public async Task<IActionResult> ApprovePayment(Guid appointmentId)
+        {
+            var result = await _paymentService.ApprovePaymentAsync(appointmentId);
+
+            if (result.IsSuccess)
+            {
+                return Ok(new { Message = "Ödeme onaylandı ve para kliniğin hesabına başarıyla aktarıldı." });
+            }
+
+            return BadRequest(new { Message = "Onay işlemi başarısız.", Error = result.ErrorMessage });
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using VeterinaryMarketplace.Core.Entities;
 
@@ -12,7 +12,7 @@ namespace VeterinaryMarketplace.Data.Configurations
             builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
             builder.Property(x => x.Species).IsRequired().HasMaxLength(50);
             builder.Property(x => x.Breed).HasMaxLength(100);
-            builder.Property(x => x.ImageURL).HasMaxLength(500);
+            builder.Property(x => x.ImageURL);
 
             builder.HasOne(p => p.Owner)
                    .WithMany(u => u.Pets)

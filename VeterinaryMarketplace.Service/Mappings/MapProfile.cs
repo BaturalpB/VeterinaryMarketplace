@@ -54,6 +54,9 @@ namespace VeterinaryMarketplace.Service.Mappings
 
             CreateMap<ReviewCreateDto, Review>();
             CreateMap<ReviewUpdateDto, Review>();
+            CreateMap<Review, ReviewDto>()
+                .ForMember(dest => dest.ReviewerName, opt => opt.MapFrom(src => src.Appointment.Pet.Owner.FirstName + " " + src.Appointment.Pet.Owner.LastName))
+                .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.Appointment.Pet.Name));
         }
 
     }

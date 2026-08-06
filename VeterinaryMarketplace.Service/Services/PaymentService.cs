@@ -53,7 +53,7 @@ namespace VeterinaryMarketplace.Service.Services
 
             CreateCancelRequest request = new CreateCancelRequest
             {
-                PaymentId = appointment.PaymentTransactionId,
+                PaymentId = appointment.TransactionID ?? appointment.PaymentTransactionId, // Geriye dönük uyumluluk için, PaymentId'yi kullan.
                 Ip = "85.34.78.112",
                 Locale = Locale.TR.ToString()
             };
@@ -176,9 +176,9 @@ namespace VeterinaryMarketplace.Service.Services
 
             if (payment.Status == "success")
             {
-                
                 appointment.IsPaid = true;
-                appointment.PaymentTransactionId = payment.PaymentId;
+                appointment.TransactionID = payment.PaymentId; // Tüm işlemi iptal etmek için gereken Parent ID
+                appointment.PaymentTransactionId = payment.PaymentItems[0].PaymentTransactionId; // Alt üye işyerine para aktarımı (Approval) için gereken Item ID
 
                 _appointmentRepository.Update(appointment);
                 await _unitOfWork.CommitAsync();
@@ -187,6 +187,37 @@ namespace VeterinaryMarketplace.Service.Services
             }
 
             return (false, payment.ErrorMessage);
+        }
+        public async Task<(bool IsSuccess, string? ErrorMessage)> ApprovePaymentAsync(Guid appointmentId)
+        {
+            var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
+
+            if (appointment == null)
+                return (false, "Randevu bulunamadı.");
+
+            if (!appointment.IsPaid || string.IsNullOrEmpty(appointment.PaymentTransactionId))
+                return (false, "Bu randevu için yapılmış geçerli bir ödeme bulunmamaktadır.");
+
+            Iyzipay.Options options = new Iyzipay.Options
+            {
+                ApiKey = _iyzicoOptions.ApiKey,
+                SecretKey = _iyzicoOptions.SecretKey,
+                BaseUrl = _iyzicoOptions.BaseUrl
+            };
+
+            CreateApprovalRequest request = new CreateApprovalRequest
+            {
+                PaymentTransactionId = appointment.PaymentTransactionId
+            };
+
+            Approval approval = await Task.Run(() => Approval.Create(request, options));
+
+            if (approval.Status == "success")
+            {
+                return (true, null);
+            }
+
+            return (false, approval.ErrorMessage);
         }
     }
 }

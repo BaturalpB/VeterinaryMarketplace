@@ -1,4 +1,4 @@
-﻿using VeterinaryMarketplace.Core.DTOs.Payment;
+using VeterinaryMarketplace.Core.DTOs.Payment;
 
 namespace VeterinaryMarketplace.Core.Services
 {
@@ -6,5 +6,6 @@ namespace VeterinaryMarketplace.Core.Services
     {
         Task<(bool IsSuccess, string? ErrorMessage)> ProcessPaymentAsync(PaymentRequestDto requestDto, string userId);
         Task<(bool IsSuccess, string? ErrorMessage)> CancelPaymentAsync(Guid appointmentId);
+        Task<(bool IsSuccess, string? ErrorMessage)> ApprovePaymentAsync(Guid appointmentId);
     }
 }

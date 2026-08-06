@@ -9,6 +9,7 @@ namespace VeterinaryMarketplace.Core.Entities
         public Guid PetId { get; set; }
         public Guid VeterinarianDetailId { get; set; }
         public DateTime AppointmentTime { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public decimal Price { get; set; }
         public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
         public bool IsCancelled { get; set; } = false;

@@ -73,6 +73,7 @@ builder.Services.Configure<IyzicoOptions>(builder.Configuration.GetSection("Iyzi
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IVeterinarianDetailService, VeterinarianDetailService>();
 builder.Services.AddScoped<IIyzicoOnboardingService, IyzicoOnboardingService>();
+builder.Services.AddHostedService<VeterinaryMarketplace.API.Services.AppointmentTimeoutBackgroundService>();
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MapProfile>();

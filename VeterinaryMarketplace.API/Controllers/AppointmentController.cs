@@ -27,6 +27,7 @@ namespace VeterinaryMarketplace.API.Controllers
         private readonly IService<Treatment> _treatmentDbService;
         private readonly IMapper _mapper;
         private readonly IValidator<AppointmentCreateDto> _createValidator;
+        private readonly IPaymentService _paymentService;
 
         public AppointmentController(
             IAppointmentService appointmentService,
@@ -35,7 +36,8 @@ namespace VeterinaryMarketplace.API.Controllers
             IService<Clinic> clinicService,
             IService<Treatment> treatmentDbService,
             IMapper mapper,
-            IValidator<AppointmentCreateDto> createValidator)
+            IValidator<AppointmentCreateDto> createValidator,
+            IPaymentService paymentService)
         {
             _appointmentService = appointmentService;
             _petService = petService;
@@ -44,6 +46,7 @@ namespace VeterinaryMarketplace.API.Controllers
             _treatmentDbService = treatmentDbService;
             _mapper = mapper;
             _createValidator = createValidator;
+            _paymentService = paymentService;
         }
 
         [HttpPost]
@@ -54,6 +57,11 @@ namespace VeterinaryMarketplace.API.Controllers
             if (!validationResult.IsValid)
             {
                 return BadRequest(validationResult.Errors);
+            }
+
+            if (createDto.AppointmentTime < DateTime.Now.AddHours(1))
+            {
+                return BadRequest(new { Message = "Randevu saati en az 1 saat sonrasına alınabilir." });
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -110,6 +118,43 @@ namespace VeterinaryMarketplace.API.Controllers
             return Ok(new { Message = "Randevu ve seçilen tedaviler başarıyla oluşturuldu!", AppointmentId = newAppointment.Id });
         }
 
+        [HttpGet("all-appointments")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllAppointments()
+        {
+            var appointments = await _appointmentService.GetAllAsync();
+            var query = _appointmentService.Where(a => true)
+                .Include(a => a.Pet).ThenInclude(p => p.Owner)
+                .Include(a => a.Veterinarian).ThenInclude(v => v.Clinic)
+                .Include(a => a.AppointmentItems).ThenInclude(ai => ai.Treatment);
+            
+            var allAppointments = await query.ToListAsync();
+
+            if (allAppointments == null || !allAppointments.Any())
+            {
+                return NotFound(new { Message = "Sistemde kayıtlı herhangi bir randevu bulunamadı." });
+            }
+
+            // Otomatik tamamlama kontrolü
+            bool isUpdated = false;
+            foreach (var apt in allAppointments)
+            {
+                if (apt.Status == Appointment.AppointmentStatus.Approved && apt.AppointmentTime <= DateTime.Now)
+                {
+                    apt.Status = Appointment.AppointmentStatus.Completed;
+                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
+                    {
+                        await _paymentService.ApprovePaymentAsync(apt.Id);
+                    }
+                    await _appointmentService.UpdateAsync(apt);
+                    isUpdated = true;
+                }
+            }
+
+            var allAppointmentsDto = _mapper.Map<List<AppointmentDto>>(allAppointments);
+            return Ok(allAppointmentsDto);
+        }
+
         [HttpGet("my-appointments")]
         [Authorize]
         public async Task<IActionResult> GetMyAppointments()
@@ -122,11 +167,34 @@ namespace VeterinaryMarketplace.API.Controllers
                     .ThenInclude(v => v.Clinic)
                 .Include(a => a.AppointmentItems)
                     .ThenInclude(ai => ai.Treatment)
+                .Include(a => a.Review)
                 .ToListAsync();
 
             if (appointments == null || !appointments.Any())
             {
                 return NotFound(new { Message = "Size ait herhangi bir randevu bulunamadı." });
+            }
+
+            // Otomatik tamamlama kontrolü (Geçmiş ve Onaylanmış randevuları Tamamlandı yap)
+            bool isUpdated = false;
+            foreach (var apt in appointments)
+            {
+                if (apt.Status == Appointment.AppointmentStatus.Approved && apt.AppointmentTime <= DateTime.Now)
+                {
+                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
+                    {
+                        var res = await _paymentService.ApprovePaymentAsync(apt.Id);
+                        if (!res.IsSuccess)
+                        {
+                            Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
+                            // Dilerseniz burada hata fırlatabilir veya loglayabilirsiniz. Şimdilik hataya rağmen completed olmasını engelliyorum.
+                            continue; // Onay başarısız olursa randevuyu Tamamlandı yapma.
+                        }
+                    }
+                    apt.Status = Appointment.AppointmentStatus.Completed;
+                    await _appointmentService.UpdateAsync(apt);
+                    isUpdated = true;
+                }
             }
 
             var myAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
@@ -152,6 +220,27 @@ namespace VeterinaryMarketplace.API.Controllers
                 return NotFound(new { Message = "Size atanmış herhangi bir randevu bulunamadı." });
             }
 
+            // Otomatik tamamlama kontrolü
+            bool isUpdated = false;
+            foreach (var apt in appointments)
+            {
+                if (apt.Status == Appointment.AppointmentStatus.Approved && apt.AppointmentTime <= DateTime.Now)
+                {
+                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
+                    {
+                        var res = await _paymentService.ApprovePaymentAsync(apt.Id);
+                        if (!res.IsSuccess)
+                        {
+                            Console.WriteLine($"Payment Approval Failed for Apt {apt.Id}: {res.ErrorMessage}");
+                            continue;
+                        }
+                    }
+                    apt.Status = Appointment.AppointmentStatus.Completed;
+                    await _appointmentService.UpdateAsync(apt);
+                    isUpdated = true;
+                }
+            }
+
             var vetAppointmentsDto = _mapper.Map<List<AppointmentDto>>(appointments);
 
             return Ok(vetAppointmentsDto);
@@ -167,8 +256,24 @@ namespace VeterinaryMarketplace.API.Controllers
             {
                 return NotFound(new { Message = "Randevu Bulunamadı" });
             }
+            
             Appointment.Status = newStatus;
             await _appointmentService.UpdateAsync(Appointment);
+
+            // Eğer randevu "Tamamlandı" olarak işaretleniyorsa, ödemeyi kliniğe aktar (Onayla)
+            if (newStatus == Core.Entities.Appointment.AppointmentStatus.Completed && Appointment.IsPaid && !string.IsNullOrEmpty(Appointment.PaymentTransactionId))
+            {
+                var paymentResult = await _paymentService.ApprovePaymentAsync(Appointment.Id);
+                if (paymentResult.IsSuccess)
+                {
+                    return Ok(new { Message = "Randevu başarıyla tamamlandı ve ödeme kliniğe aktarıldı." });
+                }
+                else
+                {
+                    return Ok(new { Message = $"Randevu tamamlandı ancak ödeme aktarımı başarısız oldu: {paymentResult.ErrorMessage}" });
+                }
+            }
+
             return Ok(new { Message = "Randevu Başarıyla güncellendi" });
         }
 
