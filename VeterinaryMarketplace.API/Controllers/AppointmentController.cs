@@ -122,8 +122,7 @@ namespace VeterinaryMarketplace.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllAppointments()
         {
-            var appointments = await _appointmentService.GetAllAsync();
-            var query = _appointmentService.Where(a => true)
+            var query = _appointmentService.Where(a => a.IsPaid)
                 .Include(a => a.Pet).ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian).ThenInclude(v => v.Clinic)
                 .Include(a => a.AppointmentItems).ThenInclude(ai => ai.Treatment);
@@ -161,7 +160,7 @@ namespace VeterinaryMarketplace.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var appointments = await _appointmentService.Where(a => a.Pet.OwnerId == userId)
+            var appointments = await _appointmentService.Where(a => a.Pet.OwnerId == userId && a.IsPaid)
                 .Include(a => a.Pet)
                 .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
@@ -207,7 +206,7 @@ namespace VeterinaryMarketplace.API.Controllers
         public async Task<IActionResult> GetVetAppointments()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var appointments = await _appointmentService.Where(a => a.Veterinarian.UserId == userId)
+            var appointments = await _appointmentService.Where(a => a.Veterinarian.UserId == userId && a.IsPaid)
                 .Include(a => a.Pet)
                 .Include(a => a.Veterinarian)
                     .ThenInclude(v => v.Clinic)
