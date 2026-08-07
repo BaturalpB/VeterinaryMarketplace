@@ -141,7 +141,7 @@ namespace VeterinaryMarketplace.Service.Services
 
             Iyzipay.Model.Address address = new Iyzipay.Model.Address
             {
-                ContactName = "Baturalp Kullanıcı",
+                ContactName = "Baturalp Budak",
                 City = "Istanbul",
                 Country = "Turkey",
                 Description = "Teknokent Bilişim Vadisi",

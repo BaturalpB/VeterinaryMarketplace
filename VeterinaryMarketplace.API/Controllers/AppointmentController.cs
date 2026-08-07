@@ -136,6 +136,7 @@ namespace VeterinaryMarketplace.API.Controllers
             var totalCount = await query.CountAsync();
 
             query = query
+                .AsNoTracking()
                 .Include(a => a.Pet).ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian).ThenInclude(v => v.Clinic)
                 .Include(a => a.Veterinarian).ThenInclude(v => v.User)
@@ -172,6 +173,7 @@ namespace VeterinaryMarketplace.API.Controllers
             var totalCount = await query.CountAsync();
 
             var appointments = await query
+                .AsNoTracking()
                 .Include(a => a.Pet)
                     .ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian)
@@ -211,6 +213,8 @@ namespace VeterinaryMarketplace.API.Controllers
             var totalCount = await query.CountAsync();
 
             var appointments = await query
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(a => a.Pet)
                     .ThenInclude(p => p.Owner)
                 .Include(a => a.Veterinarian)

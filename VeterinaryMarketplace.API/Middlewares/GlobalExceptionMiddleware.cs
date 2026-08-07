@@ -40,7 +40,7 @@ namespace VeterinaryMarketplace.API.Middlewares
             {
                 StatusCode = context.Response.StatusCode,
                 Message = "Sunucu tarafında beklenmeyen bir hata oluştu.",
-                DetailedMessage = exception.Message // Sadece geliştirme ortamında tam mesaj döndürülmesi önerilir
+                DetailedMessage = exception.Message 
             };
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(response));

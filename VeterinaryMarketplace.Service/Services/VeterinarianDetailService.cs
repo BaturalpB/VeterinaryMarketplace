@@ -21,6 +21,8 @@ namespace VeterinaryMarketplace.Service.Services
         public async Task<List<VeterinarianDetail>> GetAllWithClinicAsync()
         {
             return await _repository.Where(x => true)
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(v => v.Clinic)
                 .Include(v => v.User)
                 .ToListAsync();
@@ -34,6 +36,8 @@ namespace VeterinaryMarketplace.Service.Services
                 query = query.Where(v => v.ClinicId == clinicId.Value);
             }
             return await query
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(v => v.Clinic)
                 .Include(v => v.User)
                 .ToListAsync();
@@ -42,6 +46,8 @@ namespace VeterinaryMarketplace.Service.Services
         public async Task<VeterinarianDetail?> GetByUserIdAsync(string userId)
         {
             return await _repository.Where(x => x.UserId == userId)
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(v => v.User)
                 .Include(v => v.Clinic)
                 .FirstOrDefaultAsync();

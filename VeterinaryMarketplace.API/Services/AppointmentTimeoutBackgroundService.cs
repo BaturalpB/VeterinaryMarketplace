@@ -32,6 +32,7 @@ namespace VeterinaryMarketplace.API.Services
                 try
                 {
                     await CheckForExpiredAppointmentsAsync(stoppingToken);
+                    await CheckForCompletedAppointmentsAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -73,6 +74,42 @@ namespace VeterinaryMarketplace.API.Services
                     {
                         _logger.LogWarning($"Failed to auto-cancel appointment {apt.Id}: {result.ErrorMessage}");
                     }
+                }
+            }
+        }
+
+        private async Task CheckForCompletedAppointmentsAsync(CancellationToken stoppingToken)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var appointmentService = scope.ServiceProvider.GetRequiredService<IAppointmentService>();
+            var paymentService = scope.ServiceProvider.GetRequiredService<IPaymentService>();
+
+            var now = DateTime.Now;
+
+            var uncompletedAppointments = await dbContext.Appointments
+                .Where(a => a.Status == Appointment.AppointmentStatus.Approved && a.AppointmentTime <= now)
+                .ToListAsync(stoppingToken);
+
+            if (uncompletedAppointments.Any())
+            {
+                _logger.LogInformation($"Found {uncompletedAppointments.Count} past appointments to complete.");
+
+                foreach (var apt in uncompletedAppointments)
+                {
+                    apt.Status = Appointment.AppointmentStatus.Completed;
+                    
+                    if (apt.IsPaid && !string.IsNullOrEmpty(apt.PaymentTransactionId))
+                    {
+                        var paymentResult = await paymentService.ApprovePaymentAsync(apt.Id);
+                        if (!paymentResult.IsSuccess)
+                        {
+                            _logger.LogWarning($"Failed to capture payment for appointment {apt.Id}: {paymentResult.ErrorMessage}");
+                        }
+                    }
+
+                    await appointmentService.UpdateAsync(apt);
+                    _logger.LogInformation($"Successfully auto-completed appointment {apt.Id}.");
                 }
             }
         }
